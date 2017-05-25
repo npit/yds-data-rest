@@ -56,7 +56,7 @@ logger = configure_logging()
 ########################################
 
 # config
-query_limit = 200 # for debugging
+#query_limit = 200 # for debugging
 credsfile="creds.txt"
 user,passw, host, db = read_creds_file(credsfile)
 
@@ -110,6 +110,7 @@ def get_tweets(timestamp):
     logger.info("Tweets arg timestamp %s converted to date %s" % (str(timestamp), datestr))
     query = "SELECT " + ",".join(tweet.fields) + " from twitter_post where created_at > '" + datestr + "'"
     if query_limit:
+        logger.warning("Using query limit of %d" % query_limit)
         query = query + " limit " + str(query_limit)
 
     cursor.execute(query)
@@ -144,6 +145,7 @@ def get_articles(timestamp):
 
     query = "SELECT " + ",".join(article.fields) + " from news_articles where published > " + str(timestamp)
     if query_limit:
+        logger.warning("Using query limit of %d" % query_limit)
         query = query + " limit " + str(query_limit)
     cursor.execute(query)
     res = cursor.fetchall()

@@ -107,8 +107,8 @@ def get_tweets(timestamp):
         datestr = str(date.fromtimestamp(int(timestamp)))
     except Exception as ex:
         return [{"status" : "400", "message" : str(ex)}]
-
-    query = "SELECT " + ",".join(tweet.fields) + " from twitter_post where created_at > " + datestr
+    logger.info("Tweets arg timestamp %s converted to date %s" % (str(timestamp), datestr))
+    query = "SELECT " + ",".join(tweet.fields) + " from twitter_post where created_at > '" + datestr + "'"
     if query_limit:
         query = query + " limit " + str(query_limit)
 
@@ -155,5 +155,5 @@ def get_articles(timestamp):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
     # get_articles(123)

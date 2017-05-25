@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_restful import Resource, Api
 
 import json
-from datetime import date
+from datetime import datetime, timezone
 import logging, os, time
 import mysql.connector
 
@@ -56,7 +56,7 @@ logger = configure_logging()
 ########################################
 
 # config
-#query_limit = 200 # for debugging
+query_limit = None # for debugging
 credsfile="creds.txt"
 user,passw, host, db = read_creds_file(credsfile)
 
@@ -104,9 +104,11 @@ class tweet:
 def get_tweets(timestamp):
     logger.info("Fetching tweets with timestamp argument %s " % str(timestamp))
     try:
-        datestr = str(date.fromtimestamp(int(timestamp)))
+        dateobj = datetime.fromtimestamp(int(timestamp))
+        dateobj.replace(tzinfo=timezone.utc).astimezone(tz=None)
+        datestr = dateobj.strftime('%Y-%m-%d %H:%M:%S')
     except Exception as ex:
-        return [{"status" : "400", "message" : str(ex)}]
+        return json.dumps({"status" : "400", "message" : str(ex)})
     logger.info("Tweets arg timestamp %s converted to date %s" % (str(timestamp), datestr))
     query = "SELECT " + ",".join(tweet.fields) + " from twitter_post where created_at > '" + datestr + "'"
     if query_limit:

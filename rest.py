@@ -55,6 +55,8 @@ def read_creds_file(credsfile):
 logger = configure_logging()
 ########################################
 
+# config
+query_limit = 200 # for debugging
 credsfile="creds.txt"
 user,passw, host, db = read_creds_file(credsfile)
 
@@ -69,6 +71,12 @@ except Exception as ex:
 
 ####################################################
 
+## app
+app = Flask(__name__)
+api = Api(app)
+app.config['JSON_AS_ASCII'] = False
+
+## tweets
 class tweet:
     post_id = "post_id"
     created_at = "created_at"
@@ -80,22 +88,18 @@ class tweet:
     language = "language"
     url = "url"
     twitter_user_id = "twitter_user_id"
-    engine_type = "engine_type"
-    engine_id = "engine_id"
+
+    fields = [ post_id, created_at, coordinates, place, retweet_count, followers_when_published, text, language, url, twitter_user_id]
     def toJSON(qres, fields):
 
         jsonarr = [
 
-                {fields[i] : qres[j][i] for i in range(len(fields)) }
+                {fields[i] : str(qres[j][i]) for i in range(len(fields)) }
 
             for j in range(len(qres))
         ]
         return jsonarr
 
-
-app = Flask(__name__)
-api = Api(app)
-app.config['JSON_AS_ASCII'] = False
 @app.route("/tweets/<timestamp>")
 def get_tweets(timestamp):
     logger.info("Fetching tweets with timestamp argument %s " % str(timestamp))
@@ -104,17 +108,52 @@ def get_tweets(timestamp):
     except Exception as ex:
         return [{"status" : "400", "message" : str(ex)}]
 
-    fields = [ tweet.post_id, tweet.url, tweet.text , tweet.created_at]
-    query = ("SELECT " + ",".join(fields) + " from twitter_post where created_at > " + datestr + " limit 5")
+    query = "SELECT " + ",".join(tweet.fields) + " from twitter_post where created_at > " + datestr
+    if query_limit:
+        query = query + " limit " + str(query_limit)
 
     cursor.execute(query)
     res = cursor.fetchall()
     logger.info("Fetched %d tweets with timestamp argument %s " % (len(res), str(timestamp)))
 
-    return json.dumps(tweet.toJSON(res, fields),ensure_ascii=False)
+    return json.dumps(tweet.toJSON(res, tweet.fields),ensure_ascii=False)
+
+## articles
+class article:
+    id = "id"
+    entry_url = "entry_url"
+    feed_url = "feed_url"
+    clean_text = "clean_text"
+    published = "published"
+    language = "language"
+    title = "title"
+    fields = [ id, entry_url, feed_url, clean_text, published, language, title ]
+    def toJSON(qres, fields):
+
+        jsonarr = [
+
+                {fields[i] : str(qres[j][i]) for i in range(len(fields)) }
+
+            for j in range(len(qres))
+        ]
+        return jsonarr
+
+@app.route("/articles/<timestamp>")
+def get_articles(timestamp):
+    logger.info("Fetching articles with timestamp argument %s " % str(timestamp))
+
+    query = "SELECT " + ",".join(article.fields) + " from news_articles where published > " + str(timestamp)
+    if query_limit:
+        query = query + " limit " + str(query_limit)
+    cursor.execute(query)
+    res = cursor.fetchall()
+    logger.info("Fetched %d articles with timestamp argument %s " % (len(res), str(timestamp)))
+
+    return json.dumps(tweet.toJSON(res, article.fields),ensure_ascii=False)
+
+
 
 
 if __name__ == '__main__':
     app.run(debug=True)
-    # h = HelloWorld()
-    # h.get()
+    # get_articles(123)

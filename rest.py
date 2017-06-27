@@ -159,22 +159,21 @@ def get_articles(timestamp):
 
 
 
-@app.route("/hashtag/<articleid>")
-def get_hashtag(articleid):
-    logger.info("Getting hashtag of article with id %s" % articleid)
-    query = "SELECT twitter_post_id, twitter_hashtag.hashtag  from twitter_post_has_hashtag  inner join twitter_hashtag on twitter_hashtag_id = twitter_hashtag.id where twitter_post_id =" + str(articleid) + ""
+@app.route("/twitter/hashtag/<tweetid>")
+def get_hashtag(tweetid):
+    logger.info("Getting hashtag of article with id %s" % tweetid)
+    query = "SELECT twitter_post_id, twitter_hashtag.hashtag  from twitter_post_has_hashtag  inner join twitter_hashtag on twitter_hashtag_id = twitter_hashtag.id where twitter_post_id =" + str(tweetid) + ""
     if query_limit:
         logger.warning("Using query limit of %d" % query_limit)
         query = query + " limit " + str(query_limit)
     cursor.execute(query)
     res = cursor.fetchall()
     fields = ["twitter_post_id" , "hashtag"]
-    logger.info("Fetched %d hastags for article id %s" % (len(res),articleid))
+    logger.info("Fetched %d hastags for article id %s" % (len(res),tweetid))
     hashtags = [ res[j][ fields.index("hashtag")]  for j in range(len(res)) ] 
-    logger.info(hashtags)
-
-    res = {"hashtags" : hashtags}
-    return json.dumps(res)
+    #logger.info(hashtags)
+    #res = {"hashtags" : hashtags}
+    return json.dumps(hashtags)
 
 
 class user:

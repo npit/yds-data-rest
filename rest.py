@@ -63,7 +63,7 @@ user,passw, host, db = read_creds_file(credsfile)
 # start the connection #############################
 try:
     cnx = mysql.connector.connect(user=user, password=passw, host=host,  database=db, charset="utf8")
-    cursor = cnx.cursor()
+    cursor = cnx.cursor(buffered=True)
 except Exception as ex:
     logger.error("Unable to connect to the database.")
     logger.error(ex)
@@ -153,9 +153,55 @@ def get_articles(timestamp):
     res = cursor.fetchall()
     logger.info("Fetched %d articles with timestamp argument %s " % (len(res), str(timestamp)))
 
-    return json.dumps(tweet.toJSON(res, article.fields),ensure_ascii=False)
+    return json.dumps(article.toJSON(res, article.fields),ensure_ascii=False)
 
 
+
+
+
+@app.route("/hashtag/<articleid>")
+def get_hashtag(articleid):
+    logger.info("Getting hashtag of article with id %s" % articleid)
+    query = "SELECT twitter_post_id, twitter_hashtag.hashtag  from twitter_post_has_hashtag  inner join twitter_hashtag on twitter_hashtag_id = twitter_hashtag.id where twitter_post_id =" + str(articleid) + ""
+    if query_limit:
+        logger.warning("Using query limit of %d" % query_limit)
+        query = query + " limit " + str(query_limit)
+    cursor.execute(query)
+    res = cursor.fetchall()
+    fields = ["twitter_post_id" , "hashtag"]
+    logger.info("Fetched %d hastags for article id %s" % (len(res),articleid))
+    hashtags = [ res[j][ fields.index("hashtag")]  for j in range(len(res)) ] 
+    logger.info(hashtags)
+
+    res = {"hashtags" : hashtags}
+    return json.dumps(res)
+
+
+class user:
+    fields = ["user_id", "followers_count", "friends_count", "listed_count", "name", "screen_name", "location", "statuses_count", "timezone"]
+    def toJSON(qres, fields):
+        jsonarr = [
+
+                {fields[i] : str(qres[j][i]) for i in range(len(fields)) }
+
+            for j in range(len(qres))
+        ]
+        return jsonarr
+
+
+@app.route("/twitter/user/<userid>")
+def get_user(userid):
+    logger.info("Fetching user with id %s" % userid)
+
+    query = "SELECT " + ",".join(user.fields) + " from twitter_user where user_id =  " + str(userid)
+    if query_limit:
+        logger.warning("Using query limit of %d" % query_limit)
+        query = query + " limit " + str(query_limit)
+    cursor.execute(query)
+    res = cursor.fetchall()
+    logger.info("Fetched %d users with id %s " % (len(res), userid))
+
+    return json.dumps(user.toJSON(res, user.fields),ensure_ascii=False)
 
 
 if __name__ == '__main__':

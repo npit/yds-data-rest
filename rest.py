@@ -175,6 +175,21 @@ def get_hashtag(tweetid):
     #res = {"hashtags" : hashtags}
     return json.dumps(hashtags)
 
+@app.route("/twitter/external_link/<tweetid>")
+def get_external_link(tweetid):
+    logger.info("Getting external links of article with id %s" % tweetid)
+    query = "SELECT url from twitter_external_link  where post_id =" + str(tweetid) + ""
+    if query_limit:
+        logger.warning("Using query limit of %d" % query_limit)
+        query = query + " limit " + str(query_limit)
+    cursor.execute(query)
+    res = cursor.fetchall()
+    logger.info("Fetched %d external lniks for article id %s" % (len(res),tweetid))
+    links = [ x[0] for x in res ]
+    #logger.info(hashtags)
+    #res = {"hashtags" : hashtags}
+    return json.dumps(links)
+
 
 class user:
     fields = ["user_id", "followers_count", "friends_count", "listed_count", "name", "screen_name", "location", "statuses_count", "timezone"]
@@ -201,6 +216,8 @@ def get_user(userid):
     logger.info("Fetched %d users with id %s " % (len(res), userid))
 
     return json.dumps(user.toJSON(res, user.fields),ensure_ascii=False)
+
+
 
 
 if __name__ == '__main__':
